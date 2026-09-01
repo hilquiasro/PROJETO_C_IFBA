@@ -360,14 +360,6 @@ void submenuListarDisciplinas(){
             break;
         }
         case 3:
-            break;
-        case 4:
-            break;
-        case 5:
-            break;
-        case 6:
-            break;
-        case 7:
             submenuDisciplina();
             return;
         default:
@@ -1445,7 +1437,7 @@ void menuPosOperacao(void (*voltar)()){
         "VOLTAR AO MENU PRINCIPAL"
     };
 
-    exibirMenu("", opcoes, 2, false, false);
+    exibirMenu("", opcoes, 2, false, true);
 
     void (*funcoes[2])() = {voltar, NULL};
     mostrarOpcao(funcoes, 2);
