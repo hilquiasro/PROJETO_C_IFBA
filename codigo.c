@@ -21,6 +21,24 @@
 #define ID_DISCIPLINA 'D'
 #define ID_CADERNETA 'C'
 
+typedef enum {
+    SUCESSO,
+    NENHUM_REGISTRO,
+    ERRO_ABRIR_ARQUIVO,
+    ERRO_FECHAR_ARQUIVO,
+    ERRO_GRAVAR_ARQUIVO,
+    ERRO_POSICIONAR_ARQUIVO,
+    ERRO_REGISTRO_NAO_ENCONTRADO,
+    ERRO_MEMORIA,
+    ERRO_DATA,
+    ERRO_NAO_ENCONTRADO
+} Resultado;
+
+typedef enum {
+    NOVO,
+    ATUALIZAR
+} OperacaoArquivo;
+
 typedef struct {
     char nome[256];
     int idade;
@@ -59,9 +77,9 @@ void formularioEditarAluno();
 void formularioEditarDisciplina();
 void formularioEditarCaderneta();
 
-bool mostrarTodosAlunos();
-bool mostrarTodasDisciplinas();
-bool mostrarTodasCadernetas();
+void exibirAluno(const void *registro);
+void exibirDisciplina(const void *registro);
+void exibirCaderneta(const void *registro);
 
 bool mostrarAlunoPorMatricula(char matricula[20]);
 bool mostrarDisciplinaPorCodigo(char codigo[20]);
@@ -69,17 +87,13 @@ bool mostrarCadernetaPorCodigo(char codigo[20]);
 
 bool mostrarAlunosPorPeriodo(int periodo);
 
-bool cadastrarAluno(Aluno aluno);
-bool cadastrarDisciplina(Disciplina disciplina);
-bool cadastrarCaderneta(Caderneta caderneta);
-
 bool editarAluno(Aluno aluno);
 bool editarDisciplina(Disciplina aluno);
 bool editarCaderneta(Caderneta caderneta);
 
-bool gerarMatricula(char matricula[20]);
-bool gerarCodigoDisciplina(char codigo[20]);
-bool gerarCodigoCaderneta(char codigo[20]);
+Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, void (*mostrar)(const void *registro), int *contador); // OK
+Resultado salvarGenerico(const void *dado, size_t tamanho, const char *nome_arquivo, OperacaoArquivo operacao, size_t offset_identificador); // OK
+Resultado gerarCodigoGenerico(char codigo[20], const char *nomeArquivo, size_t tamanhoRegistro, size_t offsetCodigo, char identificador); // OK
 
 bool lerInteiro(int *valor);
 void exibirMenu(const char *titulo, const char *opcoes[], int quantidade, bool limpar_tela);
@@ -169,50 +183,76 @@ void submenuListarAlunos(){
 
     int opcao;
     printf("Digite uma opcao: ");
-    
-    if (!lerInteiro(&opcao)) {
+
+    if(!lerInteiro(&opcao)){
         printf("\nEntrada invalida! Digite um numero valido.\n");
         return;
     }
 
-    switch (opcao){
-        case 0: 
+    switch(opcao){
+        case 0:{
             char matricula[20];
+
             printf("Digite a matricula: ");
             fgets(matricula, sizeof(matricula), stdin);
-            matricula[strcspn(matricula, "\n")] = '\0'; 
+            matricula[strcspn(matricula, "\n")] = '\0';
 
-            Sleep(DELAY_PROPOSITAL); 
-            if(!mostrarAlunoPorMatricula(matricula)) printf("\nAluno nao encontrado!\n");
+            Sleep(DELAY_PROPOSITAL);
+
+            Resultado resultado = mostrarAlunoPorMatricula(matricula);
+
+            if(resultado == ERRO_NAO_ENCONTRADO)
+                printf("\nAluno nao encontrado!\n");
+            else if(resultado != SUCESSO)
+                printf("\nErro ao procurar aluno!\n");
+
             break;
-        case 1: 
-            Sleep(DELAY_PROPOSITAL); 
-            if(!mostrarTodosAlunos()) printf("\nNenhum aluno cadastrado!\n");
+        }
+        case 1:{
+            int contador;
+
+            Sleep(DELAY_PROPOSITAL);
+            Resultado resultado = listarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), exibirAluno, &contador);
+
+            if(resultado == NENHUM_REGISTRO) printf("\nNenhum aluno cadastrado!\n");
+            else if(resultado == SUCESSO) printf("\n================================================\nTotal de alunos cadastrados: %d\n", contador);
+            else printf("\nErro ao listar alunos!\n");
+
             break;
-        case 2:
+        }
+        case 2:{
             int periodo;
-        
+
             printf("Digite o periodo: ");
-            if (!lerInteiro(&periodo)) {
+
+            if(!lerInteiro(&periodo)){
                 printf("\nEntrada invalida! Digite um numero valido.\n");
                 break;
             }
-            if (periodo < 0 || periodo >= MAX_PERIODOS) {
-                printf("\nopcao invalida! digite um periodo valido.\n");
+
+            if(periodo < 0 || periodo > MAX_PERIODOS){
+                printf("\nOpcao invalida! Digite um periodo valido.\n");
                 break;
             }
+
             Sleep(DELAY_PROPOSITAL);
-            if(!mostrarAlunosPorPeriodo(periodo)){ 
+
+            Resultado resultado = mostrarAlunosPorPeriodo(periodo);
+
+            if(resultado == NENHUM_REGISTRO)
                 printf("\nNenhum aluno cadastrado para o periodo informado!\n");
-            } 
+            else if(resultado != SUCESSO)
+                printf("\nErro ao listar alunos!\n");
+
             break;
+        }
         case 3: submenuAluno(); return;
-        default: 
-            printf("\nOpcaooo invalida! digite uma opcao valida.\n"); 
-            break;
+
+        default: printf("\nOpcao invalida! Digite uma opcao valida.\n"); break;
     }
-    
+
     printf("\n\n");
+
     const char *pos_opcoes[] = {
         "VOLTAR",
         "VOLTAR AO MENU PRINCIPAL"
@@ -220,7 +260,7 @@ void submenuListarAlunos(){
 
     exibirMenu("", pos_opcoes, 2, false);
 
-    void (*funcoes[2])() = {submenuListarDisciplinas, NULL};
+    void (*funcoes[2])() = {submenuListarAlunos, NULL};
     mostrarOpcao(funcoes, 2);
 }
 
@@ -238,158 +278,185 @@ void submenuListarDisciplinas(){
 
     exibirMenu("LISTAR DISCIPLINAS", opcoes, 8, true);
 
-    int opcao;
-    printf("Digite uma opcao: ");
+    // int opcao;
+    // printf("Digite uma opcao: ");
     
-    if (!lerInteiro(&opcao)) {
-        printf("\nEntrada invalida! Digite um numero valido.\n");
-        return;
-    }
+    // if (!lerInteiro(&opcao)) {
+    //     printf("\nEntrada invalida! Digite um numero valido.\n");
+    //     return;
+    // }
 
-    switch (opcao){
-        case 0: 
-            char codigo[20];
-            printf("Digite o codigo : ");
-            fgets(codigo, sizeof(codigo), stdin);
-            codigo[strcspn(codigo, "\n")] = '\0'; 
+    // switch (opcao){
+    //     case 0: 
+    //         char codigo[20];
+    //         printf("Digite o codigo : ");
+    //         fgets(codigo, sizeof(codigo), stdin);
+    //         codigo[strcspn(codigo, "\n")] = '\0'; 
 
-            Sleep(DELAY_PROPOSITAL); 
-            if(!mostrarDisciplinaPorCodigo(codigo)) printf("\nDisciplina nao encontrada!\n");
-            break;
-        case 1: 
-            Sleep(DELAY_PROPOSITAL); 
-            if(!mostrarTodasDisciplinas()) printf("\nNenhuma disciplina cadastrada!\n");
-            break;
-        case 2:
-            int periodo;
+    //         Sleep(DELAY_PROPOSITAL); 
+    //         if(!mostrarDisciplinaPorCodigo(codigo)) printf("\nDisciplina nao encontrada!\n");
+    //         break;
+    //     case 1: 
+    //         Sleep(DELAY_PROPOSITAL); 
+    //         if(!mostrarTodasDisciplinas()) printf("\nNenhuma disciplina cadastrada!\n");
+    //         break;
+    //     case 2:
+    //         int periodo;
         
-            printf("Digite o nome: ");
-            // if (!lerInteiro(&periodo)) {
-            //     printf("\nEntrada invalida! Digite um numero valido.\n");
-            //     break;
-            // }
-            // if (periodo < 0 || periodo >= MAX_PERIODOS) {
-            //     printf("\nopcao invalida! digite um periodo valido.\n");
-            //     break;
-            // }
-            // Sleep(DELAY_PROPOSITAL);
-            // if(!mostrarAlunosPorPeriodo(periodo)){ 
-            //     printf("\nNenhum aluno cadastrado para o periodo informado!\n");
-            // } 
-            break;
-        case 3: submenuDisciplina(); return;
-        default: 
-            printf("\nOpcaooo invalida! digite uma opcao valida.\n"); 
-            break;
-    }
+    //         printf("Digite o nome: ");
+    //         // if (!lerInteiro(&periodo)) {
+    //         //     printf("\nEntrada invalida! Digite um numero valido.\n");
+    //         //     break;
+    //         // }
+    //         // if (periodo < 0 || periodo >= MAX_PERIODOS) {
+    //         //     printf("\nopcao invalida! digite um periodo valido.\n");
+    //         //     break;
+    //         // }
+    //         // Sleep(DELAY_PROPOSITAL);
+    //         // if(!mostrarAlunosPorPeriodo(periodo)){ 
+    //         //     printf("\nNenhum aluno cadastrado para o periodo informado!\n");
+    //         // } 
+    //         break;
+    //     case 3: submenuDisciplina(); return;
+    //     default: 
+    //         printf("\nOpcaooo invalida! digite uma opcao valida.\n"); 
+    //         break;
+    // }
     
-    printf("\n\n");
-    const char *pos_opcoes[] = {
-        "VOLTAR",
-        "VOLTAR AO MENU PRINCIPAL"
-    };
+    // printf("\n\n");
+    // const char *pos_opcoes[] = {
+    //     "VOLTAR",
+    //     "VOLTAR AO MENU PRINCIPAL"
+    // };
 
-    exibirMenu("", pos_opcoes, 2, false);
+    // exibirMenu("", pos_opcoes, 2, false);
 
-    void (*funcoes[2])() = {submenuListarDisciplinas, NULL};
-    mostrarOpcao(funcoes, 2);
+    // void (*funcoes[2])() = {submenuListarDisciplinas, NULL};
+    // mostrarOpcao(funcoes, 2);
 }
 
 void submenuListarCaderneta(){
-    const char *opcoes[] = {
-        "PROCURAR CADERNETA PELO CODIGO",
-        "LISTAR TODAS AS CADERNTENAS",
-        "VOLTAR"
-    };
+    // const char *opcoes[] = {
+    //     "PROCURAR CADERNETA PELO CODIGO",
+    //     "LISTAR TODAS AS CADERNTENAS",
+    //     "VOLTAR"
+    // };
 
-    exibirMenu("LISTAR CADERNETAS", opcoes, 3, true);
+    // exibirMenu("LISTAR CADERNETAS", opcoes, 3, true);
 
-    int opcao;
-    printf("Digite uma opcao: ");
+    // int opcao;
+    // printf("Digite uma opcao: ");
     
-    if (!lerInteiro(&opcao)) {
-        printf("\nEntrada invalida! Digite um numero valido.\n");
-        return;
-    }
+    // if (!lerInteiro(&opcao)) {
+    //     printf("\nEntrada invalida! Digite um numero valido.\n");
+    //     return;
+    // }
 
-    switch (opcao){
-        case 0: 
-            char codigo[20];
-            printf("Digite o codigo : ");
-            fgets(codigo, sizeof(codigo), stdin);
-            codigo[strcspn(codigo, "\n")] = '\0'; 
+    // switch (opcao){
+    //     case 0: 
+    //         char codigo[20];
+    //         printf("Digite o codigo : ");
+    //         fgets(codigo, sizeof(codigo), stdin);
+    //         codigo[strcspn(codigo, "\n")] = '\0'; 
 
-            Sleep(DELAY_PROPOSITAL); 
-            if(!mostrarCadernetaPorCodigo(codigo)) printf("\nCaderneta nao encontrada!\n");
-            break;
-        case 1: 
-            Sleep(DELAY_PROPOSITAL); 
-            if(!mostrarTodasCadernetas()) printf("\nNenhuma caderneta cadastrada!\n");
-            break;
-        case 2: submenuCaderneta(); return;
-        default: 
-            printf("\nOpcaooo invalida! digite uma opcao valida.\n"); 
-            break;
-    }
+    //         Sleep(DELAY_PROPOSITAL); 
+    //         if(!mostrarCadernetaPorCodigo(codigo)) printf("\nCaderneta nao encontrada!\n");
+    //         break;
+    //     case 1: 
+    //         Sleep(DELAY_PROPOSITAL); 
+    //         if(!mostrarTodasCadernetas()) printf("\nNenhuma caderneta cadastrada!\n");
+    //         break;
+    //     case 2: submenuCaderneta(); return;
+    //     default: 
+    //         printf("\nOpcaooo invalida! digite uma opcao valida.\n"); 
+    //         break;
+    // }
     
-    printf("\n\n");
-    const char *pos_opcoes[] = {
-        "VOLTAR",
-        "VOLTAR AO MENU PRINCIPAL"
-    };
+    // printf("\n\n");
+    // const char *pos_opcoes[] = {
+    //     "VOLTAR",
+    //     "VOLTAR AO MENU PRINCIPAL"
+    // };
 
-    exibirMenu("", pos_opcoes, 2, false);
+    // exibirMenu("", pos_opcoes, 2, false);
 
-    void (*funcoes[2])() = {submenuListarCaderneta, NULL};
-    mostrarOpcao(funcoes, 2);
+    // void (*funcoes[2])() = {submenuListarCaderneta, NULL};
+    // mostrarOpcao(funcoes, 2);
 }
 
+Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, void (*mostrar)(const void *registro), int *contador){
+    FILE *arq = fopen(nomeArquivo, "rb");
 
-// deveria ter uma forma de eu utlizar essa função de outra forma polimorfismo 
-// pq eu repito quase tudo e so coloco a condiçãod e periodo na outra
-bool mostrarTodosAlunos(){
-    FILE *arq = fopen(ARQUIVO_ALUNOS, "rb");
-	Aluno aluno;
-    bool tem_aluno = false;
-    int contador = 0;
+    if(arq == NULL)
+        return ERRO_ABRIR_ARQUIVO;
 
-    system("cls");      
-    while (fread(&aluno, sizeof(Aluno), 1, arq) == 1) {
-        printf("================================================\n");
-        printf("Matricula : %s\n", aluno.matricula);
-        printf("Nome      : %s\n", aluno.nome);
-        printf("Idade     : %d anos\n", aluno.idade);
-        printf("Periodo   : %d\n", aluno.periodo);
-        tem_aluno = true;
-        contador++;
+    void *registro = malloc(tamanhoRegistro);
+
+    if(registro == NULL){
+        fclose(arq);
+        return ERRO_MEMORIA;
     }
-	fclose(arq);
-    
+
+    int total = 0;
+
+    system("cls");
+
+    while(fread(registro, tamanhoRegistro, 1, arq) == 1){
+        mostrar(registro);
+        total++;
+    }
+
+    free(registro);
+
+    if(fclose(arq) != 0)
+        return ERRO_FECHAR_ARQUIVO;
+
+    if(contador != NULL)
+        *contador = total;
+
+    if(total == 0)
+        return NENHUM_REGISTRO;
+
+    return SUCESSO;
+}
+
+void exibirAluno(const void *registro){
+    const Aluno *aluno = registro;
+
     printf("================================================\n");
-    printf("Total de alunos cadastrados: %d", contador);
-    return tem_aluno;
+    printf("Matricula : %s\n", aluno->matricula);
+    printf("Nome      : %s\n", aluno->nome);
+    printf("Idade     : %d anos\n", aluno->idade);
+    printf("Periodo   : %d\n", aluno->periodo);
 }
 
-bool mostrarTodasCadernetas(){
-    FILE *arq = fopen(ARQUIVO_CADERNETAS, "rb");
-	Caderneta caderneta;
-    bool tem_caderneta = false;
-    int contador = 0;
+void exibirDisciplina(const void *registro){
+    const Disciplina *disciplina = registro;
 
-    system("cls");      
-    while (fread(&caderneta, sizeof(Caderneta), 1, arq) == 1) {
-        printf("================================================\n");
-        printf("Codigo     : %s\n", caderneta.codigo);
-        printf("Disciplina : %s\n", caderneta.disciplina.nome);
-        tem_caderneta = true;
-        contador++;
-    }
-	fclose(arq);
-    
     printf("================================================\n");
-    printf("Total de cadernetas cadastradas: %d", contador);
-    return tem_caderneta;
+    printf("Nome    : %s\n", disciplina->nome);
+    printf("Codigo  : %s\n", disciplina->codigo);
+    printf("Periodo : %d\n", disciplina->periodo);
 }
+
+void exibirCaderneta(const void *registro){
+    const Caderneta *caderneta = registro;
+
+    printf("================================================\n");
+    printf("Codigo     : %s\n", caderneta->codigo);
+    printf("Disciplina : %s\n", caderneta->disciplina.nome);
+}
+
+
+
+
+
+
+
+
+
+
+
 
 bool mostrarAlunosPorPeriodo(int periodo){
     FILE *arq = fopen(ARQUIVO_ALUNOS, "rb");
@@ -467,27 +534,9 @@ bool editarAluno(Aluno aluno) {
     return false;
 }
 
-bool mostrarTodasDisciplinas(){
-    FILE *arq = fopen(ARQUIVO_DISCIPLINAS, "rb");
-	Disciplina disciplina;
-    bool tem_disciplina = false;
-    int contador = 0;
-
-    system("cls");      
-    while (fread(&disciplina, sizeof(Disciplina), 1, arq) == 1) {
-        printf("================================================\n");
-        printf("Nome    : %s\n", disciplina.nome);
-        printf("Codigo  : %s\n", disciplina.codigo);
-        printf("Periodo : %d\n", disciplina.periodo);
-        tem_disciplina = true;
-        contador++;
-    }
-	fclose(arq);
-    
-    printf("================================================\n");
-    printf("Total de disciplinas cadastradas: %d", contador);
-    return tem_disciplina;
-}
+// printf("================================================\n");
+// printf("Total de disciplinas cadastradas: %d", contador);
+// return tem_disciplina;
 
 bool mostrarDisciplinaPorCodigo(char codigo[20]){
     FILE *arq = fopen(ARQUIVO_DISCIPLINAS, "rb");
@@ -599,9 +648,8 @@ void formularioCadastrarAluno(){
 		return;
 	}
     //deveria perguntar confindadno a criação
-
-    gerarMatricula(aluno.matricula);    
-    cadastrarAluno(aluno);
+    gerarCodigoGenerico(aluno.matricula, ARQUIVO_ALUNOS, sizeof(Aluno), offsetof(Aluno, matricula), ID_ALUNO);
+    salvarGenerico(&aluno, sizeof(Aluno), ARQUIVO_ALUNOS, NOVO, 0); 
 }
 
 void formularioEditarAluno(){
@@ -617,16 +665,16 @@ void formularioEditarAluno(){
     if(!mostrarAlunoPorMatricula(matricula)){
         printf("\nNao foi encontrado aluno com esssa matirucla.\n");
     }else{
-        printf("Digite o nome: ");
+        printf("Digite o novo nome: ");
         fgets(aluno.nome, sizeof(aluno.nome), stdin);
         aluno.nome[strcspn(aluno.nome, "\n")] = '\0';
         
-        printf("Digite a idade: ");
+        printf("Digite a nova idade: ");
         if (!lerInteiro(&aluno.idade)) {
             printf("\nEntrada invalida! Digite um numero valido.\n");
             return;
         }
-        printf("Digite o periodo: ");
+        printf("Digite o novo periodo: ");
         if (!lerInteiro(&aluno.periodo)) {
             printf("\nEntrada invalida! Digite um numero valido.\n");
             return;
@@ -635,10 +683,12 @@ void formularioEditarAluno(){
         strcpy(aluno.matricula, matricula);
 
         //deveria perguntar confirmando a edicao
-        if(!editarAluno(aluno)){
+        Resultado resultado = salvarGenerico(&aluno, sizeof(Aluno), ARQUIVO_ALUNOS, ATUALIZAR, offsetof(Aluno, matricula));
+
+        if(resultado != SUCESSO){
             Sleep(DELAY_PROPOSITAL);
             printf("\nErro ao editar aluno.\n");
-        } else {             
+        }else{
             Sleep(DELAY_PROPOSITAL);
             printf("\nAluno atualizado com sucesso.\n");
         }
@@ -668,10 +718,8 @@ void formularioCadastrarDisciplina(){
 		return;
 	}
     //deveria perguntar confindadno a criação
-
-    
-    gerarCodigoDisciplina(disciplina.codigo);    
-    cadastrarDisciplina(disciplina);
+    gerarCodigoGenerico(disciplina.codigo, ARQUIVO_DISCIPLINAS, sizeof(Disciplina), offsetof(Disciplina, codigo), ID_DISCIPLINA);    
+    salvarGenerico(&disciplina, sizeof(Caderneta), ARQUIVO_DISCIPLINAS, NOVO, 0); 
 
 }
 
@@ -693,136 +741,100 @@ void formularioCadastrarCaderneta(){
     fgets(codigo, sizeof(codigo), stdin);
     codigo[strcspn(codigo, "\n")] = '\0';
 
-    // caderneta.disciplina = buscasDisciplinaPeloCodigo(codigo);
     //deveria perguntar confindadno a criação
 
-    gerarCodigoCaderneta(caderneta.codigo);    
-    cadastrarCaderneta(caderneta);
+    gerarCodigoGenerico(caderneta.codigo, ARQUIVO_CADERNETAS, sizeof(Caderneta), offsetof(Caderneta, codigo), ID_CADERNETA); 
+    salvarGenerico(&caderneta, sizeof(Caderneta), ARQUIVO_CADERNETAS, NOVO, 0); 
 }
 
-bool cadastrarDisciplina(Disciplina disciplina){
-    FILE *arq = fopen(ARQUIVO_DISCIPLINAS, "ab");
-	fwrite(&disciplina, 1, sizeof(Disciplina), arq);
-	fclose(arq);
-    return true;
+Resultado salvarGenerico( const void *dado, size_t tamanho, const char *nome_arquivo, OperacaoArquivo operacao, size_t offset_identificador){
+    FILE *arq;
+
+    if (operacao == NOVO) {
+        arq = fopen(nome_arquivo, "ab");
+        
+        if (fwrite(dado, tamanho, 1, arq) != 1) {
+            fclose(arq);
+            return ERRO_GRAVAR_ARQUIVO;
+        }
+        if (fclose(arq) != 0)
+            return ERRO_FECHAR_ARQUIVO;
+        return SUCESSO;
+    }
+
+    arq = fopen(nome_arquivo, "r+b");
+
+    if (arq == NULL) return ERRO_ABRIR_ARQUIVO;
+
+    void *registro = malloc(tamanho);
+
+    if (registro == NULL) {
+        fclose(arq);
+        return ERRO_MEMORIA;
+    }
+
+    while (fread(registro, tamanho, 1, arq) == 1) {
+        char *id_arquivo = (char *)registro + offset_identificador;
+        char *id_dado = (char *)dado + offset_identificador;
+
+        if (strcmp(id_arquivo, id_dado) == 0) {
+            if (fseek(arq, -(long)tamanho, SEEK_CUR) != 0) {
+                free(registro);
+                fclose(arq);
+                return ERRO_POSICIONAR_ARQUIVO;
+            }
+            if (fwrite(dado, tamanho, 1, arq) != 1) {
+                free(registro);
+                fclose(arq);
+                return ERRO_GRAVAR_ARQUIVO;
+            }
+            free(registro);
+            fclose(arq);
+
+            return SUCESSO;
+        }
+    }
+    free(registro);
+    fclose(arq);
+
+    return false;
 }
 
-bool cadastrarAluno(Aluno aluno){
-    FILE *arq = fopen(ARQUIVO_ALUNOS, "ab");
-	fwrite(&aluno, 1, sizeof(Aluno), arq);
-	fclose(arq);
-    return true;
-}
-
-bool cadastrarCaderneta(Caderneta caderneta){
-    FILE *arq = fopen(ARQUIVO_CADERNETAS, "ab");
-	fwrite(&caderneta, 1, sizeof(Caderneta), arq);
-	fclose(arq);
-    return true;
-}
-
-bool gerarMatricula(char matricula[20]) {
-    FILE *arq = fopen(ARQUIVO_ALUNOS, "rb");
+Resultado gerarCodigoGenerico(char codigo[20], const char *nomeArquivo, size_t tamanhoRegistro, size_t offsetCodigo, char identificador){
+    FILE *arq = fopen(nomeArquivo, "rb");
 
     time_t agora = time(NULL);
     struct tm *data = localtime(&agora);
 
-    int anoAtual = data->tm_year + 1900;
-    int maiorNumero = 0;
-
-    Aluno aluno;
-
-    while (fread(&aluno, sizeof(Aluno), 1, arq) == 1) {
-        int ano;
-        int numero;
-
-        if (sscanf(aluno.matricula, "%4d%4d", &ano, &numero) == 2) {
-
-            if (ano == anoAtual && numero > maiorNumero) {
-                maiorNumero = numero;
-            }
-        }
-    }
-
-    fclose(arq);
-    maiorNumero++;
-
-    sprintf(matricula, "%c%04d%04d", ID_ALUNO, anoAtual, maiorNumero);
-
-    return true;
-}
-
-bool gerarCodigoDisciplina(char codigo[20]) {
-
-    FILE *arq = fopen(ARQUIVO_DISCIPLINAS, "rb");
-
-    if (arq == NULL) {
-        return false;
-    }
-
-    time_t agora = time(NULL);
-    struct tm *data = localtime(&agora);
+    if (data == NULL) return ERRO_DATA;
 
     int anoAtual = data->tm_year + 1900;
     int maiorNumero = 0;
 
-    Disciplina disciplina;
+    if (arq != NULL) {
+        void *registro = malloc(tamanhoRegistro);
 
-    while (fread(&disciplina, sizeof(Disciplina), 1, arq) == 1) {
+        if (registro == NULL) {
+            fclose(arq);
+            return ERRO_MEMORIA;
+        }
 
-        int ano;
-        int numero;
+        while (fread(registro, tamanhoRegistro, 1, arq) == 1) {
+            char *campoCodigo = (char *)registro + offsetCodigo;
+            int ano;
+            int numero;
 
-        if (sscanf(disciplina.codigo, "%*c%4d%4d", &ano, &numero) == 2) {
-
-            if (ano == anoAtual && numero > maiorNumero) {
-                maiorNumero = numero;
+            if (sscanf(campoCodigo, "%*c%4d%4d", &ano, &numero) == 2) {
+                if (ano == anoAtual && numero > maiorNumero) maiorNumero = numero;
             }
         }
+        free(registro);
+        if (fclose(arq) != 0) return ERRO_FECHAR_ARQUIVO;
     }
-
-    fclose(arq);
-
     maiorNumero++;
 
-    sprintf(codigo, "%c%04d%04d",
-            ID_DISCIPLINA,
-            anoAtual,
-            maiorNumero);
-
-    return true;
-}
-
-bool gerarCodigoCaderneta(char codigo[20]) {
-    FILE *arq = fopen(ARQUIVO_CADERNETAS, "rb");
-
-    time_t agora = time(NULL);
-    struct tm *data = localtime(&agora);
-
-    int anoAtual = data->tm_year + 1900;
-    int maiorNumero = 0;
-
-    Caderneta caderneta;
-
-    while (fread(&caderneta, sizeof(Caderneta), 1, arq) == 1) {
-        int ano;
-        int numero;
-
-        if (sscanf(caderneta.codigo, "%4d%4d", &ano, &numero) == 2) {
-
-            if (ano == anoAtual && numero > maiorNumero) {
-                maiorNumero = numero;
-            }
-        }
-    }
-
-    fclose(arq);
-
-    maiorNumero++;
-
-    sprintf(codigo, "%c%04d%04d", ID_CADERNETA, anoAtual, maiorNumero);
-
-    return true;
+    sprintf(codigo, "%c%04d%04d", identificador, anoAtual, maiorNumero);
+    return SUCESSO;
 }
 
 void exibirMenu(const char *titulo, const char *opcoes[], int quantidade, bool limpar_tela){
