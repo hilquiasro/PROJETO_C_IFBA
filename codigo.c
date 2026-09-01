@@ -407,8 +407,11 @@ void submenuListarCaderneta(){
             Resultado resultado = buscarGenerico(ARQUIVO_CADERNETAS, sizeof(Caderneta), filtroCodigoCaderneta, codigo, &caderneta);
             Sleep(DELAY_PROPOSITAL);
 
-            if(resultado == SUCESSO)
+            if(resultado == SUCESSO){
+                exibirMenu("CADERNETA", NULL, 0, true, false);
                 exibirCaderneta(&caderneta);
+                exibirTabelaCaderneta(&caderneta);
+            }
             else if(resultado == ERRO_NAO_ENCONTRADO)
                 printf("\nCaderneta nao encontrada!\n");
             else
