@@ -60,12 +60,12 @@ typedef struct {
     char codigo[20];
 } Caderneta;
 
-void menuPrincipal();
-void submenuAluno();
+void menuPrincipal(); //OK
+void submenuAluno(); //OK
 void submenuDisciplina();
 void submenuCaderneta();
 
-void submenuListarAlunos();
+void submenuListarAlunos(); //OK
 void submenuListarDisciplinas();
 void submenuListarCaderneta();
 
@@ -87,7 +87,7 @@ bool mostrarCadernetaPorCodigo(char codigo[20]);
 
 bool mostrarAlunosPorPeriodo(int periodo);
 
-bool editarAluno(Aluno aluno);
+bool editarAluno(Aluno aluno); //OK
 bool editarDisciplina(Disciplina aluno);
 bool editarCaderneta(Caderneta caderneta);
 
@@ -97,9 +97,11 @@ Resultado gerarCodigoGenerico(char codigo[20], const char *nomeArquivo, size_t t
 
 bool lerInteiro(int *valor);
 void exibirMenu(const char *titulo, const char *opcoes[], int quantidade, bool limpar_tela);
+void menuPosOperacao(void (*voltar)());
 void mostrarOpcao(void (*funcao[])(), int quantidade);
 
-void encerrarPrograma();
+bool confirmarEscolha(const char *mensagem);
+void sairPrograma();
 
 bool encerrar_programa = false;
 
@@ -125,7 +127,7 @@ void menuPrincipal(){
 
     exibirMenu("MENU PRINCIPAL", opcoes, 4, true);
     
-    void (*funcoes[4])() = {submenuAluno, submenuDisciplina, submenuCaderneta, encerrarPrograma};
+    void (*funcoes[4])() = {submenuAluno, submenuDisciplina, submenuCaderneta, sairPrograma};
     mostrarOpcao(funcoes, 4);
 }
 
@@ -251,17 +253,7 @@ void submenuListarAlunos(){
         default: printf("\nOpcao invalida! Digite uma opcao valida.\n"); break;
     }
 
-    printf("\n\n");
-
-    const char *pos_opcoes[] = {
-        "VOLTAR",
-        "VOLTAR AO MENU PRINCIPAL"
-    };
-
-    exibirMenu("", pos_opcoes, 2, false);
-
-    void (*funcoes[2])() = {submenuListarAlunos, NULL};
-    mostrarOpcao(funcoes, 2);
+    menuPosOperacao(submenuListarAlunos);
 }
 
 void submenuListarDisciplinas(){
@@ -635,27 +627,39 @@ bool editarDisciplina(Disciplina disciplina) {
 void formularioCadastrarAluno(){
 	Aluno aluno;
 	
+    exibirMenu("CADASTRAR ALUNO", NULL, 0, true);
+
     printf("Digite o nome: ");
     fgets(aluno.nome, sizeof(aluno.nome), stdin);
     aluno.nome[strcspn(aluno.nome, "\n")] = '\0';
 
 	printf("Digite a idade: ");
-	if (!lerInteiro(&aluno.idade)) {
-		return;
-	}
+	if (!lerInteiro(&aluno.idade)) return;
 	printf("Digite o periodo: ");
-	if (!lerInteiro(&aluno.periodo)) {
-		return;
-	}
-    //deveria perguntar confindadno a criação
-    gerarCodigoGenerico(aluno.matricula, ARQUIVO_ALUNOS, sizeof(Aluno), offsetof(Aluno, matricula), ID_ALUNO);
-    salvarGenerico(&aluno, sizeof(Aluno), ARQUIVO_ALUNOS, NOVO, 0); 
+	if (!lerInteiro(&aluno.periodo)) return;
+
+    Resultado resultado = gerarCodigoGenerico(aluno.matricula, ARQUIVO_ALUNOS, sizeof(Aluno), offsetof(Aluno, matricula), ID_ALUNO);
+
+    if(resultado != SUCESSO){
+        printf("\nErro ao gerar matricula.\n");
+        return;
+    }
+
+    if(confirmarEscolha("Deseja confirmar o cadastro?")){
+        resultado = salvarGenerico(&aluno, sizeof(Aluno), ARQUIVO_ALUNOS, NOVO, 0);
+        Sleep(DELAY_PROPOSITAL);
+        if(resultado == SUCESSO) printf("\nAluno cadastrado com sucesso!\n");
+        else printf("\nErro ao cadastrar aluno!\n");
+    } 
+
+    menuPosOperacao(submenuAluno);
 }
 
 void formularioEditarAluno(){
     Aluno aluno;
-    exibirMenu("EDITAR ALUNO", NULL, 0, true);
     char matricula[20];
+
+    exibirMenu("EDITAR ALUNO", NULL, 0, true);
 	
     printf("Digite a matricula: ");
     fgets(matricula, sizeof(matricula), stdin);
@@ -682,28 +686,18 @@ void formularioEditarAluno(){
         
         strcpy(aluno.matricula, matricula);
 
-        //deveria perguntar confirmando a edicao
-        Resultado resultado = salvarGenerico(&aluno, sizeof(Aluno), ARQUIVO_ALUNOS, ATUALIZAR, offsetof(Aluno, matricula));
+        if(confirmarEscolha("Deseja confirmar a edicao?")){
+            Resultado resultado = salvarGenerico(&aluno, sizeof(Aluno), ARQUIVO_ALUNOS, ATUALIZAR, offsetof(Aluno, matricula));
+            Sleep(DELAY_PROPOSITAL);
 
-        if(resultado != SUCESSO){
-            Sleep(DELAY_PROPOSITAL);
-            printf("\nErro ao editar aluno.\n");
-        }else{
-            Sleep(DELAY_PROPOSITAL);
-            printf("\nAluno atualizado com sucesso.\n");
+            if(resultado != SUCESSO){
+                printf("\nErro ao editar aluno.\n");
+            }else{
+                printf("\nAluno atualizado com sucesso.\n");
+            }
         }
     }
-
-    printf("\n\n");
-    const char *pos_opcoes[] = {
-        "VOLTAR",
-        "VOLTAR AO MENU PRINCIPAL"
-    };
-
-    exibirMenu("", pos_opcoes, 2, false);
-
-    void (*funcoes[2])() = {submenuAluno, NULL};
-    mostrarOpcao(funcoes, 2);
+    menuPosOperacao(submenuAluno);
 }
 
 void formularioCadastrarDisciplina(){
@@ -887,18 +881,22 @@ void mostrarOpcao(void (*funcao[])(), int quantidade){
     }
 }
 
-void encerrarPrograma() { 
-    printf("Tem certeza que deseja encerrar o programa? (S/N): "); 
+bool confirmarEscolha(const char *mensagem){
+    printf("\n");
+    char resposta[5];
 
-    char resposta[5]; 
-    fgets(resposta, sizeof(resposta), stdin); 
+    printf("%s (S/N): ", mensagem);
+    fgets(resposta, sizeof(resposta), stdin);
 
-    if (resposta[0] != '\n' &&
-        resposta[1] == '\n' &&
-        (resposta[0] == 'S' || resposta[0] == 's')) {
+    return resposta[0] != '\n' &&
+           resposta[1] == '\n' &&
+           (resposta[0] == 'S' || resposta[0] == 's');
+}
 
+void sairPrograma(){
+    if(confirmarEscolha("Deseja encerrar o programa?")){
         printf("\nSessao finalizada!");
-        encerrar_programa = true; 
+        encerrar_programa = true;
     }
 }
 
@@ -925,6 +923,19 @@ bool lerInteiro(int *valor) {
     *valor = (int)numero;
 
     return true;
+}
+
+void menuPosOperacao(void (*voltar)()){
+    printf("\n\n");
+    const char *opcoes[] = {
+        "VOLTAR",
+        "VOLTAR AO MENU PRINCIPAL"
+    };
+
+    exibirMenu("", opcoes, 2, false);
+
+    void (*funcoes[2])() = {voltar, NULL};
+    mostrarOpcao(funcoes, 2);
 }
 
 int main() {
