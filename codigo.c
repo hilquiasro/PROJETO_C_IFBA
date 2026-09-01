@@ -5,6 +5,7 @@
 #include <time.h>
 #include <errno.h>
 #include <string.h>
+#include <stddef.h>
 
 #define ARQUIVO_ALUNOS "alunos.hro"
 #define ARQUIVO_DISCIPLINAS "disciplinas.hro"
@@ -21,6 +22,8 @@
 #define ID_ALUNO 'A'
 #define ID_DISCIPLINA 'D'
 #define ID_CADERNETA 'C'
+
+#define NOTA_APROVACAO 7.0
 
 typedef enum {
     SUCESSO,
@@ -71,6 +74,7 @@ void submenuCaderneta();
 void submenuListarAlunos(); //OK
 void submenuListarDisciplinas();
 void submenuListarCaderneta();
+void submenuListagemEspecificaCaderneta(const Caderneta *caderneta);
 
 void submenuEditarCaderneta();
 
@@ -88,8 +92,14 @@ void exibirDisciplina(const void *registro); //OK
 void exibirCaderneta(const void *registro); //OK
 void exibirTabelaCaderneta(const Caderneta *caderneta);
 
+Resultado exibirAprovados(const Caderneta *caderneta);
+Resultado exibirReprovados(const Caderneta *caderneta);
+Resultado exibirAlunoMaiorNota(const Caderneta *caderneta);
+Resultado exibirPercentualAprovadosReprovados(const Caderneta *caderneta);
+
 void editarNotasCaderneta(const char *codigo);
 void adicionarAlunoCaderneta(const char *codigo);
+float calcularMediaAluno(const Caderneta *caderneta, int indiceAluno);
 
 Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, bool (*filtro)(const void *, const void *), const void *criterio, void (*exibir)(const void *), int *contador); // OK
 Resultado buscarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, bool (*filtro)(const void *, const void *), const void *criterio, void *resultado);
@@ -112,17 +122,9 @@ void sairPrograma(); //OK
 
 bool encerrar_programa = false;
 
-// system("cls");  
-// printf("=========================== MENU PRINCIPAL ====================\n");
-// printf("[0] GERENCIAR ALUNOS\n");
-// printf("[1] GERENCIAR DISCIPLINAS\n");
-// printf("[2] GERENCIAR CADERNETAS\n");
-// printf("[3] LISTAR ALUNOS APROVADOS POR DISCIPLINA\n");
 // printf("[4] LISTAR PERCENTUAL DE ALUNOS REPROVADOS POR DISCIPLINA\n");
 // printf("[5] LISTAR QUANTIDADE DE ALUNOS POR DISCIPLINA\n");
-// printf("[6] LISTAR ALUNO COM MAIOR NOTA POR DISCIPLINA\n");
-// printf("[7] SAIR\n");
-// printf("===============================================================\n");
+
 
 void menuPrincipal(){ 
     const char *opcoes[] = {
@@ -281,14 +283,10 @@ void submenuListarDisciplinas(){
         "PESQUISAR DISCIPLINA PELO CODIGO",
         "LISTAR TODAS DISCIPLINAS CADASTRADAS",
         "LISTAR DISCIPLINAS POR PERIODO",
-        "LISTAR ALUNOS APROVADOS POR DISCIPLINA",
-        "LISTAR PERCENTUAL DE ALUNOS REPROVADOS POR DISCIPLINA",
-        "LISTAR QUANTIDADE DE ALUNOS POR DISCIPLINA",
-        "LISTAR ALUNO COM MAIOR NOTA POR DISCIPLINA",
         "VOLTAR"
     };
 
-    exibirMenu("LISTAR DISCIPLINAS", opcoes, 8, true, true);
+    exibirMenu("LISTAR DISCIPLINAS", opcoes, 4, true, true);
 
     int opcao;
     printf("Digite uma opcao: ");
@@ -383,10 +381,11 @@ void submenuListarCaderneta(){
     const char *opcoes[] = {
         "PROCURAR CADERNETA PELO CODIGO",
         "LISTAR TODAS AS CADERNETAS",
+        "LISTAGENS ESPECIFICAS",
         "VOLTAR"
     };
 
-    exibirMenu("LISTAR CADERNETAS", opcoes, 3, true, true);
+    exibirMenu("LISTAR CADERNETAS", opcoes, 4, true, true);
 
     int opcao;
     printf("Digite uma opcao: ");
@@ -401,13 +400,13 @@ void submenuListarCaderneta(){
             char codigo[20];
             Caderneta caderneta;
 
-            printf("Digite o codigo: ");
+            printf("Digite o codigo da caderneta: ");
             fgets(codigo, sizeof(codigo), stdin);
             codigo[strcspn(codigo, "\n")] = '\0';
 
             Resultado resultado = buscarGenerico(ARQUIVO_CADERNETAS, sizeof(Caderneta), filtroCodigoCaderneta, codigo, &caderneta);
             Sleep(DELAY_PROPOSITAL);
-            //ajustar aqui
+
             if(resultado == SUCESSO)
                 exibirCaderneta(&caderneta);
             else if(resultado == ERRO_NAO_ENCONTRADO)
@@ -432,18 +431,86 @@ void submenuListarCaderneta(){
 
             break;
         }
-        case 2:
+        case 2:{
+            char codigo[20];
+            Caderneta caderneta;
+
+            printf("Digite o codigo da caderneta: ");
+            fgets(codigo, sizeof(codigo), stdin);
+            codigo[strcspn(codigo, "\n")] = '\0';
+
+            Resultado resultado = buscarGenerico(ARQUIVO_CADERNETAS, sizeof(Caderneta), filtroCodigoCaderneta, codigo, &caderneta);
+            Sleep(DELAY_PROPOSITAL);
+
+            if(resultado == SUCESSO)
+                submenuListagemEspecificaCaderneta(&caderneta);
+            else if(resultado == ERRO_NAO_ENCONTRADO)
+                printf("\nCaderneta nao encontrada!\n");
+            else
+                printf("\nErro ao procurar caderneta!\n");
+
+            return;
+        }
+        case 3:
             submenuCaderneta();
             return;
         default:
             printf("\nOpcao invalida! Digite uma opcao valida.\n");
             break;
     }
+
     menuPosOperacao(submenuListarCaderneta);
 }
 
+void submenuListagemEspecificaCaderneta(const Caderneta *caderneta){
+    const char *opcoes[] = {
+        "LISTAR ALUNOS APROVADOS",
+        "LISTAR ALUNOS REPROVADOS",
+        "LISTAR ALUNO COM MAIOR NOTA",
+        "LISTAR PERCENTUAL DE ALUNOS APROVADOS E REPROVADOS",
+        "VOLTAR"
+    };
 
+    exibirMenu("LISTAGENS ESPECIFICAS", opcoes, 5, true, true);
 
+    int opcao;
+    printf("Digite uma opcao: ");
+
+    if(!lerInteiro(&opcao)){
+        printf("\nEntrada invalida! Digite um numero valido.\n");
+        return;
+    }
+
+    switch(opcao){
+        case 0:
+            exibirMenu("LISTAR ALUNOS APROVADOS", NULL, 0, true, false);
+            exibirAprovados(caderneta);
+            break;
+            
+        case 1:
+            exibirMenu("LISTAR ALUNOS REPROVADOS", NULL, 0, true, false);
+            exibirReprovados(caderneta);
+            break;
+
+        case 2:
+            exibirMenu("ALUNO COM MAIOR NOTA", NULL, 0, true, false);
+            exibirAlunoMaiorNota(caderneta);
+            break;
+
+        case 3:
+            exibirMenu("LISTAR PERCENTUAL DE ALUNOS APROVADOS E REPROVADOS", NULL, 0, true, false);
+            exibirPercentualAprovadosReprovados(caderneta);
+            break;
+
+        case 4: submenuListarCaderneta(); return;
+
+        default:
+            printf("\nOpcao invalida! Digite uma opcao valida.\n");
+            break;
+    }
+
+    menuPosOperacao(submenuListarCaderneta);
+}
 
 Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, bool (*filtro)(const void *, const void *), const void *criterio, void (*exibir)(const void *), int *contador){
     FILE *arq = fopen(nomeArquivo, "rb");
@@ -569,11 +636,138 @@ void exibirTabelaCaderneta(const Caderneta *caderneta){
     printf("========================================================\n");
 }
 
-bool filtroMatricula(const void *registro, const void *criterio){
-    const Aluno *aluno = registro;
-    const char *matricula = criterio;
 
-    return strcmp(aluno->matricula, matricula) == 0;
+
+
+Resultado exibirAprovados(const Caderneta *caderneta){
+    bool encontrou = false;
+
+    exibirCaderneta(caderneta);
+    printf("ALUNOS APROVADOS\n");
+
+    for(int i = 0; i < MAX_ALUNOS; i++){
+        if(caderneta->alunos[i].matricula[0] == '\0')
+            continue;
+
+        float media = calcularMediaAluno(caderneta, i);
+
+        if(media >= NOTA_APROVACAO){
+            printf("--------------------------------------------------------\n");
+            printf("Matricula : %s\n", caderneta->alunos[i].matricula);
+            printf("Nome      : %s\n", caderneta->alunos[i].nome);
+            printf("Media     : %.2f\n", media);
+
+            encontrou = true;
+        }
+    }
+
+    printf("========================================================\n");
+
+    if(!encontrou)
+        return NENHUM_REGISTRO;
+
+    return SUCESSO;
+}
+
+Resultado exibirReprovados(const Caderneta *caderneta){
+    bool encontrou = false;
+
+    exibirCaderneta(caderneta);
+    printf("ALUNOS REPROVADOS\n");
+
+    for(int i = 0; i < MAX_ALUNOS; i++){
+        if(caderneta->alunos[i].matricula[0] == '\0')
+            continue;
+
+        float media = calcularMediaAluno(caderneta, i);
+
+        if(media < NOTA_APROVACAO){
+            printf("--------------------------------------------------------\n");
+            printf("Matricula : %s\n", caderneta->alunos[i].matricula);
+            printf("Nome      : %s\n", caderneta->alunos[i].nome);
+            printf("Media     : %.2f\n", media);
+
+            encontrou = true;
+        }
+    }
+
+    printf("========================================================\n");
+
+    if(!encontrou)
+        return NENHUM_REGISTRO;
+
+    return SUCESSO;
+}
+
+Resultado exibirAlunoMaiorNota(const Caderneta *caderneta){
+    int indiceMaior = -1;
+    float maiorMedia = -1;
+
+    for(int i = 0; i < MAX_ALUNOS; i++){
+        if(caderneta->alunos[i].matricula[0] == '\0')
+            continue;
+
+        float media = calcularMediaAluno(caderneta, i);
+
+        if(media > maiorMedia){
+            maiorMedia = media;
+            indiceMaior = i;
+        }
+    }
+
+    if(indiceMaior == -1)
+        return NENHUM_REGISTRO;
+
+    printf("\n========================================================\n");
+    printf("Codigo     : %s\n", caderneta->codigo);
+    printf("Disciplina : %s\n", caderneta->disciplina.nome);
+    printf("Periodo    : %d\n", caderneta->disciplina.periodo);
+    printf("========================================================\n");
+    printf("ALUNO COM MAIOR MEDIA\n");
+    printf("--------------------------------------------------------\n");
+    printf("Matricula : %s\n", caderneta->alunos[indiceMaior].matricula);
+    printf("Nome      : %s\n", caderneta->alunos[indiceMaior].nome);
+    printf("Media     : %.2f\n", maiorMedia);
+    printf("========================================================\n");
+
+    return SUCESSO;
+}
+
+Resultado exibirPercentualAprovadosReprovados(const Caderneta *caderneta){
+    int totalAlunos = 0;
+    int aprovados = 0;
+    int reprovados = 0;
+
+    for(int i = 0; i < MAX_ALUNOS; i++){
+        if(caderneta->alunos[i].matricula[0] == '\0')
+            continue;
+
+        totalAlunos++;
+
+        float media = calcularMediaAluno(caderneta, i);
+
+        if(media >= NOTA_APROVACAO)
+            aprovados++;
+        else
+            reprovados++;
+    }
+
+    if(totalAlunos == 0)
+        return NENHUM_REGISTRO;
+
+    float percentualAprovados = (aprovados * 100.0) / totalAlunos;
+    float percentualReprovados = (reprovados * 100.0) / totalAlunos;
+
+    exibirCaderneta(caderneta);
+
+    printf("PERCENTUAL DE ALUNOS\n");
+    printf("--------------------------------------------------------\n");
+    printf("Total de alunos : %d\n", totalAlunos);
+    printf("Aprovados       : %.2f%%\n", percentualAprovados);
+    printf("Reprovados      : %.2f%%\n", percentualReprovados);
+    printf("========================================================\n");
+
+    return SUCESSO;
 }
 
 
@@ -585,16 +779,12 @@ bool filtroMatricula(const void *registro, const void *criterio){
 
 
 
+bool filtroMatricula(const void *registro, const void *criterio){
+    const Aluno *aluno = registro;
+    const char *matricula = criterio;
 
-
-
-
-
-
-
-
-
-
+    return strcmp(aluno->matricula, matricula) == 0;
+}
 
 bool filtroCodigoDisciplina(const void *registro, const void *criterio){
     const Disciplina *disciplina = registro;
@@ -624,6 +814,14 @@ bool filtroPeriodoDisciplina(const void *registro, const void *criterio){
     return disciplina->periodo == *periodo;
 }
 
+float calcularMediaAluno(const Caderneta *caderneta, int indiceAluno){
+    float soma = 0;
+
+    for(int j = 0; j < MAX_NOTAS; j++)
+        soma += caderneta->notas[indiceAluno][j];
+
+    return soma / MAX_NOTAS;
+}
 
 
 
@@ -1007,12 +1205,6 @@ void adicionarAlunoCaderneta(const char *codigo){
         }
     }
 }
-
-
-
-
-
-
 
 
 
