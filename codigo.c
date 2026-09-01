@@ -91,17 +91,22 @@ bool editarAluno(Aluno aluno); //OK
 bool editarDisciplina(Disciplina aluno);
 bool editarCaderneta(Caderneta caderneta);
 
-Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, void (*mostrar)(const void *registro), int *contador); // OK
+Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, bool (*filtro)(const void *, const void *), const void *criterio, void (*exibir)(const void *), int *contador); // OK
 Resultado salvarGenerico(const void *dado, size_t tamanho, const char *nome_arquivo, OperacaoArquivo operacao, size_t offset_identificador); // OK
 Resultado gerarCodigoGenerico(char codigo[20], const char *nomeArquivo, size_t tamanhoRegistro, size_t offsetCodigo, char identificador); // OK
 
-bool lerInteiro(int *valor);
-void exibirMenu(const char *titulo, const char *opcoes[], int quantidade, bool limpar_tela);
-void menuPosOperacao(void (*voltar)());
-void mostrarOpcao(void (*funcao[])(), int quantidade);
+bool filtroMatricula(const void *registro, const void *criterio);
+bool filtroCodigoDisciplina(const void *registro, const void *criterio);
+bool filtroCodigoCaderneta(const void *registro, const void *criterio);
+bool filtroPeriodoAluno(const void *registro, const void *criterio);
+bool filtroPeriodoDisciplina(const void *registro, const void *criterio); 
 
-bool confirmarEscolha(const char *mensagem);
-void sairPrograma();
+bool lerInteiro(int *valor);
+void exibirMenu(const char *titulo, const char *opcoes[], int quantidade, bool limpar_tela); 
+void menuPosOperacao(void (*voltar)()); //OK
+void mostrarOpcao(void (*funcao[])(), int quantidade); //OK
+bool confirmarEscolha(const char *mensagem); //OK
+void sairPrograma(); //OK
 
 bool encerrar_programa = false;
 
@@ -200,10 +205,9 @@ void submenuListarAlunos(){
             matricula[strcspn(matricula, "\n")] = '\0';
 
             Sleep(DELAY_PROPOSITAL);
-
-            Resultado resultado = mostrarAlunoPorMatricula(matricula);
-
-            if(resultado == ERRO_NAO_ENCONTRADO)
+            Resultado resultado = listarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), filtroMatricula, matricula, exibirAluno, NULL);
+            
+            if(resultado == NENHUM_REGISTRO)
                 printf("\nAluno nao encontrado!\n");
             else if(resultado != SUCESSO)
                 printf("\nErro ao procurar aluno!\n");
@@ -214,16 +218,18 @@ void submenuListarAlunos(){
             int contador;
 
             Sleep(DELAY_PROPOSITAL);
-            Resultado resultado = listarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), exibirAluno, &contador);
+            Resultado resultado = listarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), NULL, NULL, exibirAluno, &contador);
 
             if(resultado == NENHUM_REGISTRO) printf("\nNenhum aluno cadastrado!\n");
-            else if(resultado == SUCESSO) printf("\n================================================\nTotal de alunos cadastrados: %d\n", contador);
+            else if(resultado == SUCESSO) 
+                printf("\n================================================\nTotal de alunos cadastrados: %d\n", contador);
             else printf("\nErro ao listar alunos!\n");
 
             break;
         }
         case 2:{
             int periodo;
+            int contador;
 
             printf("Digite o periodo: ");
 
@@ -239,13 +245,12 @@ void submenuListarAlunos(){
 
             Sleep(DELAY_PROPOSITAL);
 
-            Resultado resultado = mostrarAlunosPorPeriodo(periodo);
+            Resultado resultado = listarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), filtroPeriodoAluno, &periodo, exibirAluno, &contador);
 
-            if(resultado == NENHUM_REGISTRO)
-                printf("\nNenhum aluno cadastrado para o periodo informado!\n");
-            else if(resultado != SUCESSO)
-                printf("\nErro ao listar alunos!\n");
-
+            if(resultado == NENHUM_REGISTRO) printf("\nNenhum aluno cadastrado para o periodo informado!\n");
+            else if(resultado == SUCESSO) 
+                printf("================================================\n\nTotal de alunos no periodo '%d': %d\n", periodo, contador);
+            else printf("\nErro ao listar alunos!\n");
             break;
         }
         case 3: submenuAluno(); return;
@@ -376,7 +381,7 @@ void submenuListarCaderneta(){
     // mostrarOpcao(funcoes, 2);
 }
 
-Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, void (*mostrar)(const void *registro), int *contador){
+Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, bool (*filtro)(const void *, const void *), const void *criterio, void (*exibir)(const void *), int *contador){
     FILE *arq = fopen(nomeArquivo, "rb");
 
     if(arq == NULL)
@@ -394,8 +399,10 @@ Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, void (
     system("cls");
 
     while(fread(registro, tamanhoRegistro, 1, arq) == 1){
-        mostrar(registro);
-        total++;
+        if(filtro == NULL || filtro(registro, criterio)){
+            exibir(registro);
+            total++;
+        }
     }
 
     free(registro);
@@ -441,14 +448,40 @@ void exibirCaderneta(const void *registro){
 
 
 
+bool filtroMatricula(const void *registro, const void *criterio){
+    const Aluno *aluno = registro;
+    const char *matricula = criterio;
 
+    return strcmp(aluno->matricula, matricula) == 0;
+}
 
+bool filtroCodigoDisciplina(const void *registro, const void *criterio){
+    const Disciplina *disciplina = registro;
+    const char *codigo = criterio;
 
+    return strcmp(disciplina->codigo, codigo) == 0;
+}
 
+bool filtroCodigoCaderneta(const void *registro, const void *criterio){
+    const Caderneta *caderneta = registro;
+    const char *codigo = criterio;
 
+    return strcmp(caderneta->codigo, codigo) == 0;
+}
 
+bool filtroPeriodoAluno(const void *registro, const void *criterio){
+    const Aluno *aluno = registro;
+    const int *periodo = criterio;
+    
+    return aluno->periodo == *periodo;
+}
 
+bool filtroPeriodoDisciplina(const void *registro, const void *criterio){
+    const Disciplina *disciplina = registro;
+    const char *periodo = criterio;
 
+    return disciplina->periodo == *periodo;
+}
 
 bool mostrarAlunosPorPeriodo(int periodo){
     FILE *arq = fopen(ARQUIVO_ALUNOS, "rb");
