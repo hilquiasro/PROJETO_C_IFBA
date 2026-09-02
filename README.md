@@ -176,7 +176,7 @@ GCC 16.1.0
 Abra o terminal na pasta onde está o arquivo `.c` e execute:
 
 ```bash
-gcc main.c -o sistema.exe
+gcc main.c -o codigo.exe
 ```
 
 Caso o arquivo fonte possua outro nome, substitua `main.c` pelo nome correspondente.
@@ -186,13 +186,13 @@ Caso o arquivo fonte possua outro nome, substitua `main.c` pelo nome corresponde
 No Windows:
 
 ```bash
-.\sistema.exe
+.\codigo.exe
 ```
 
 Ou, no terminal:
 
 ```bash
-sistema.exe
+codigo.exe
 ```
 
 ## 📁 Estrutura dos arquivos
@@ -242,14 +242,14 @@ Atualmente, o sistema utiliza os seguintes limites:
 
 * **Hilquias**
 * **Ernani**
-* **[Maiane**
+* **Maiane**
 * **Sabrina**
 
 ## 🔗 Repositório
 
 GitHub:
 
-**[COLE AQUI O LINK DO REPOSITÓRIO]**
+**https://github.com/hilquiasro/PROJETO_C_IFBA**
 
 ## 📄 Observações
 
