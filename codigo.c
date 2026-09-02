@@ -66,30 +66,31 @@ typedef struct {
     bool fechada;
 } Caderneta;
 
-void menuPrincipal(); //OK
-void submenuAluno(); //OK
-void submenuDisciplina(); //OK
+void menuPrincipal(); 
+void submenuAluno(); 
+void submenuDisciplina(); 
 void submenuCaderneta();
 
-void submenuListarAlunos(); //OK
+void submenuListarAlunos(); 
 void submenuListarDisciplinas();
 void submenuListarCaderneta();
 void submenuListagemEspecificaCaderneta(const Caderneta *caderneta);
 
 void submenuEditarCaderneta();
 
-void formularioCadastrarAluno(); // OK
+void formularioCadastrarAluno(); 
 void formularioCadastrarDisciplina();
 void formularioCadastrarCaderneta();
+void formularioFecharCaderneta();
 
 void formularioEditarAluno();
 void formularioEditarDisciplina();
 void formularioEditarNotasCaderneta();
 void formularioAdicionarAlunoCaderneta();
 
-void exibirAluno(const void *registro); //OK
-void exibirDisciplina(const void *registro); //OK
-void exibirCaderneta(const void *registro); //OK
+void exibirAluno(const void *registro); 
+void exibirDisciplina(const void *registro); 
+void exibirCaderneta(const void *registro); 
 void exibirTabelaCaderneta(const Caderneta *caderneta);
 
 Resultado exibirAprovados(const Caderneta *caderneta);
@@ -99,32 +100,29 @@ Resultado exibirPercentualAprovadosReprovados(const Caderneta *caderneta);
 
 void editarNotasCaderneta(const char *codigo);
 void adicionarAlunoCaderneta(const char *codigo);
+void fecharCaderneta(const char *codigo);
 float calcularMediaAluno(const Caderneta *caderneta, int indiceAluno);
 
-Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, bool (*filtro)(const void *, const void *), const void *criterio, void (*exibir)(const void *), int *contador); // OK
+Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, bool (*filtro)(const void *, const void *), const void *criterio, void (*exibir)(const void *), int *contador); 
 Resultado buscarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, bool (*filtro)(const void *, const void *), const void *criterio, void *resultado);
-Resultado salvarGenerico(const void *dado, size_t tamanho, const char *nome_arquivo, OperacaoArquivo operacao, size_t offset_identificador); // OK
-Resultado gerarCodigoGenerico(char codigo[20], const char *nomeArquivo, size_t tamanhoRegistro, size_t offsetCodigo, char identificador); // OK
+Resultado salvarGenerico(const void *dado, size_t tamanho, const char *nome_arquivo, OperacaoArquivo operacao, size_t offset_identificador); 
+Resultado gerarCodigoGenerico(char codigo[20], const char *nomeArquivo, size_t tamanhoRegistro, size_t offsetCodigo, char identificador); 
 
-bool filtroMatricula(const void *registro, const void *criterio); //OK
-bool filtroCodigoDisciplina(const void *registro, const void *criterio); //OK
-bool filtroCodigoCaderneta(const void *registro, const void *criterio); //OK
-bool filtroPeriodoAluno(const void *registro, const void *criterio); //OK
-bool filtroPeriodoDisciplina(const void *registro, const void *criterio); //OK
+bool filtroMatricula(const void *registro, const void *criterio); 
+bool filtroCodigoDisciplina(const void *registro, const void *criterio); 
+bool filtroCodigoCaderneta(const void *registro, const void *criterio); 
+bool filtroPeriodoAluno(const void *registro, const void *criterio); 
+bool filtroPeriodoDisciplina(const void *registro, const void *criterio); 
 
-bool lerInteiro(int *valor); //OK
+bool lerInteiro(int *valor); 
 bool lerFloat(float *valor);
 void exibirMenu(const char *titulo, const char *opcoes[], int quantidade, bool limpar_tela, bool mostrar_rodape); 
-void menuPosOperacao(void (*voltar)()); //OK
-void mostrarOpcao(void (*funcao[])(), int quantidade); //OK
-bool confirmarEscolha(const char *mensagem); //OK
-void sairPrograma(); //OK
+void menuPosOperacao(void (*voltar)()); 
+void mostrarOpcao(void (*funcao[])(), int quantidade); 
+bool confirmarEscolha(const char *mensagem); 
+void sairPrograma(); 
 
 bool encerrar_programa = false;
-
-// printf("[4] LISTAR PERCENTUAL DE ALUNOS REPROVADOS POR DISCIPLINA\n");
-// printf("[5] LISTAR QUANTIDADE DE ALUNOS POR DISCIPLINA\n");
-
 
 void menuPrincipal(){ 
     const char *opcoes[] = {
@@ -186,13 +184,14 @@ void submenuEditarCaderneta(){
     const char *opcoes[] = {
         "ADICIONAR ALUNO",
         "ATUALIZAR NOTAS",
+        "FECHAR CADERNETA",
         "VOLTAR"
     };
 
-    exibirMenu("GERENCIAR CADERNETAS", opcoes, 3, true, true);
+    exibirMenu("GERENCIAR CADERNETAS", opcoes, 4, true, true);
 
-    void (*funcoes[3])() = {formularioAdicionarAlunoCaderneta, formularioEditarNotasCaderneta, submenuCaderneta};
-    mostrarOpcao(funcoes, 3);
+    void (*funcoes[4])() = {formularioAdicionarAlunoCaderneta, formularioEditarNotasCaderneta, formularioFecharCaderneta, submenuCaderneta};
+    mostrarOpcao(funcoes, 4);
 }
 
 void submenuListarAlunos(){
@@ -222,6 +221,7 @@ void submenuListarAlunos(){
             matricula[strcspn(matricula, "\n")] = '\0';
 
             Sleep(DELAY_PROPOSITAL);
+            exibirMenu("ALUNO", NULL, 0, true, false);
             Resultado resultado = listarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), filtroMatricula, matricula, exibirAluno, NULL);
             
             if(resultado == NENHUM_REGISTRO)
@@ -235,6 +235,7 @@ void submenuListarAlunos(){
             int contador;
 
             Sleep(DELAY_PROPOSITAL);
+            exibirMenu("ALUNOS", NULL, 0, true, false);
             Resultado resultado = listarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), NULL, NULL, exibirAluno, &contador);
 
             if(resultado == NENHUM_REGISTRO) printf("\nNenhum aluno cadastrado!\n");
@@ -262,6 +263,7 @@ void submenuListarAlunos(){
 
             Sleep(DELAY_PROPOSITAL);
 
+            exibirMenu("ALUNOS", NULL, 0, true, false);
             Resultado resultado = listarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), filtroPeriodoAluno, &periodo, exibirAluno, &contador);
 
             if(resultado == NENHUM_REGISTRO) printf("\nNenhum aluno cadastrado para o periodo informado!\n");
@@ -306,6 +308,7 @@ void submenuListarDisciplinas(){
 
             Sleep(DELAY_PROPOSITAL);
 
+            exibirMenu("DISCIPLINA", NULL, 0, true, false);
             Resultado resultado = listarGenerico(ARQUIVO_DISCIPLINAS, sizeof(Disciplina), filtroCodigoDisciplina, codigo, exibirDisciplina, NULL);
 
             if(resultado == NENHUM_REGISTRO)
@@ -320,6 +323,7 @@ void submenuListarDisciplinas(){
 
             Sleep(DELAY_PROPOSITAL);
 
+            exibirMenu("DISCIPLINAS", NULL, 0, true, false);
             Resultado resultado = listarGenerico(ARQUIVO_DISCIPLINAS, sizeof(Disciplina), NULL, NULL, exibirDisciplina, &contador);
 
             if(resultado == NENHUM_REGISTRO)
@@ -349,6 +353,7 @@ void submenuListarDisciplinas(){
 
             Sleep(DELAY_PROPOSITAL);
 
+            exibirMenu("DISCIPLINAS", NULL, 0, true, false);
             Resultado resultado = listarGenerico(ARQUIVO_DISCIPLINAS, sizeof(Disciplina), filtroPeriodoDisciplina, &periodo, exibirDisciplina, &contador);
 
             if(resultado == NENHUM_REGISTRO)
@@ -415,6 +420,7 @@ void submenuListarCaderneta(){
             int contador;
 
             Sleep(DELAY_PROPOSITAL);
+            exibirMenu("CADERNETAS", NULL, 0, true, false);
             Resultado resultado = listarGenerico(ARQUIVO_CADERNETAS, sizeof(Caderneta), NULL, NULL, exibirCaderneta, &contador);
 
             if(resultado == NENHUM_REGISTRO)
@@ -476,33 +482,42 @@ void submenuListagemEspecificaCaderneta(const Caderneta *caderneta){
         return;
     }
 
+    Resultado resultado;
+
     switch(opcao){
         case 0:
-            exibirMenu("LISTAR ALUNOS APROVADOS", NULL, 0, true, false);
-            exibirAprovados(caderneta);
+            exibirMenu("ALUNOS APROVADOS", NULL, 0, true, false);
+            resultado = exibirAprovados(caderneta);
             break;
-            
+
         case 1:
-            exibirMenu("LISTAR ALUNOS REPROVADOS", NULL, 0, true, false);
-            exibirReprovados(caderneta);
+            exibirMenu("ALUNOS REPROVADOS", NULL, 0, true, false);
+            resultado = exibirReprovados(caderneta);
             break;
 
         case 2:
             exibirMenu("ALUNO COM MAIOR NOTA", NULL, 0, true, false);
-            exibirAlunoMaiorNota(caderneta);
+            resultado = exibirAlunoMaiorNota(caderneta);
             break;
 
         case 3:
-            exibirMenu("LISTAR PERCENTUAL DE ALUNOS APROVADOS E REPROVADOS", NULL, 0, true, false);
-            exibirPercentualAprovadosReprovados(caderneta);
+            exibirMenu("PERCENTUAL DE ALUNOS APROVADOS E REPROVADOS", NULL, 0, true, false);
+            resultado = exibirPercentualAprovadosReprovados(caderneta);
             break;
 
-        case 4: submenuListarCaderneta(); return;
+        case 4:
+            submenuListarCaderneta();
+            return;
 
         default:
             printf("\nOpcao invalida! Digite uma opcao valida.\n");
-            break;
+            return;
     }
+
+    if(resultado == NENHUM_REGISTRO)
+        printf("\nNao ha alunos cadastrados nesta caderneta!\n");
+    else if(resultado != SUCESSO)
+        printf("\nErro ao realizar listagem!\n");
 
     menuPosOperacao(submenuListarCaderneta);
 }
@@ -521,8 +536,6 @@ Resultado listarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, bool (
     }
 
     int total = 0;
-
-    system("cls");
 
     while(fread(registro, tamanhoRegistro, 1, arq) == 1){
         if(filtro == NULL || filtro(registro, criterio)){
@@ -578,9 +591,6 @@ Resultado buscarGenerico(const char *nomeArquivo, size_t tamanhoRegistro, bool (
     return ERRO_NAO_ENCONTRADO;
 }
 
-
-
-
 void exibirAluno(const void *registro){
     const Aluno *aluno = registro;
 
@@ -631,14 +641,11 @@ void exibirTabelaCaderneta(const Caderneta *caderneta){
     printf("========================================================\n");
 }
 
-
-
-
 Resultado exibirAprovados(const Caderneta *caderneta){
     bool encontrou = false;
 
     exibirCaderneta(caderneta);
-    printf("ALUNOS APROVADOS\n");
+    printf("\nALUNOS APROVADOS\n");
 
     for(int i = 0; i < MAX_ALUNOS; i++){
         if(caderneta->alunos[i].matricula[0] == '\0')
@@ -668,7 +675,7 @@ Resultado exibirReprovados(const Caderneta *caderneta){
     bool encontrou = false;
 
     exibirCaderneta(caderneta);
-    printf("ALUNOS REPROVADOS\n");
+    printf("\nALUNOS REPROVADOS\n");
 
     for(int i = 0; i < MAX_ALUNOS; i++){
         if(caderneta->alunos[i].matricula[0] == '\0')
@@ -713,12 +720,9 @@ Resultado exibirAlunoMaiorNota(const Caderneta *caderneta){
     if(indiceMaior == -1)
         return NENHUM_REGISTRO;
 
-    printf("\n========================================================\n");
-    printf("Codigo     : %s\n", caderneta->codigo);
-    printf("Disciplina : %s\n", caderneta->disciplina.nome);
-    printf("Periodo    : %d\n", caderneta->disciplina.periodo);
-    printf("========================================================\n");
-    printf("ALUNO COM MAIOR MEDIA\n");
+    exibirCaderneta(caderneta);
+
+    printf("\nALUNO COM MAIOR MEDIA\n");
     printf("--------------------------------------------------------\n");
     printf("Matricula : %s\n", caderneta->alunos[indiceMaior].matricula);
     printf("Nome      : %s\n", caderneta->alunos[indiceMaior].nome);
@@ -755,7 +759,7 @@ Resultado exibirPercentualAprovadosReprovados(const Caderneta *caderneta){
 
     exibirCaderneta(caderneta);
 
-    printf("PERCENTUAL DE ALUNOS\n");
+    printf("\nPERCENTUAL DE ALUNOS\n");
     printf("--------------------------------------------------------\n");
     printf("Total de alunos : %d\n", totalAlunos);
     printf("Aprovados       : %.2f%%\n", percentualAprovados);
@@ -764,15 +768,6 @@ Resultado exibirPercentualAprovadosReprovados(const Caderneta *caderneta){
 
     return SUCESSO;
 }
-
-
-
-
-
-
-
-
-
 
 bool filtroMatricula(const void *registro, const void *criterio){
     const Aluno *aluno = registro;
@@ -818,45 +813,56 @@ float calcularMediaAluno(const Caderneta *caderneta, int indiceAluno){
     return soma / MAX_NOTAS;
 }
 
-
-
-
-
-
-
-
-
-
-
-
 void formularioCadastrarAluno(){
-	Aluno aluno;
-	
+    Aluno aluno;
+
     exibirMenu("CADASTRAR ALUNO", NULL, 0, true, false);
 
     printf("Digite o nome: ");
     fgets(aluno.nome, sizeof(aluno.nome), stdin);
     aluno.nome[strcspn(aluno.nome, "\n")] = '\0';
 
-	printf("Digite a idade: ");
-	if (!lerInteiro(&aluno.idade)) return;
-	printf("Digite o periodo: ");
-	if (!lerInteiro(&aluno.periodo)) return;
+    printf("Digite a idade: ");
+    if(!lerInteiro(&aluno.idade)){
+        printf("\nEntrada invalida!\n");
+        goto fim;
+    }
+
+    if(aluno.idade < MIN_IDADE){
+        printf("\nIdade invalida! A idade minima e %d anos.\n", MIN_IDADE);
+        goto fim;
+    }
+
+    printf("Digite o periodo: ");
+    if(!lerInteiro(&aluno.periodo)){
+        printf("\nEntrada invalida!\n");
+        goto fim;
+    }
+
+    if(aluno.periodo < 1 || aluno.periodo > MAX_PERIODOS){
+        printf("\nPeriodo invalido! Digite um periodo entre 1 e %d.\n", MAX_PERIODOS);
+        goto fim;
+    }
 
     Resultado resultado = gerarCodigoGenerico(aluno.matricula, ARQUIVO_ALUNOS, sizeof(Aluno), offsetof(Aluno, matricula), ID_ALUNO);
 
     if(resultado != SUCESSO){
+        Sleep(DELAY_PROPOSITAL);
         printf("\nErro ao gerar matricula.\n");
-        return;
+        goto fim;
     }
 
     if(confirmarEscolha("Deseja confirmar o cadastro?")){
         resultado = salvarGenerico(&aluno, sizeof(Aluno), ARQUIVO_ALUNOS, NOVO, 0);
         Sleep(DELAY_PROPOSITAL);
-        if(resultado == SUCESSO) printf("Aluno cadastrado com sucesso!\n");
-        else printf("Erro ao cadastrar aluno!\n");
-    } 
 
+        if(resultado == SUCESSO)
+            printf("Aluno cadastrado com sucesso!\n");
+        else
+            printf("Erro ao cadastrar aluno!\n");
+    }
+
+fim:
     menuPosOperacao(submenuAluno);
 }
 
@@ -865,78 +871,114 @@ void formularioEditarAluno(){
     char matricula[20];
 
     exibirMenu("EDITAR ALUNO", NULL, 0, true, false);
-	
+
     printf("Digite a matricula: ");
     fgets(matricula, sizeof(matricula), stdin);
-    matricula[strcspn(matricula, "\n")] = '\0';  
-    
-    Resultado resultado = listarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), filtroMatricula, matricula, exibirAluno, NULL);
+    matricula[strcspn(matricula, "\n")] = '\0';
+
+    Resultado resultado = buscarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), filtroMatricula, matricula, &aluno);
     Sleep(DELAY_PROPOSITAL);
 
-    if(resultado == NENHUM_REGISTRO){
+    if(resultado == ERRO_NAO_ENCONTRADO){
         printf("\nNao foi encontrado aluno com essa matricula.\n");
     }else if(resultado != SUCESSO){
         printf("\nErro ao procurar aluno.\n");
     }else{
-        printf("Digite o novo nome: ");
-        fgets(aluno.nome, sizeof(aluno.nome), stdin);
-        aluno.nome[strcspn(aluno.nome, "\n")] = '\0';
+        exibirAluno(&aluno);
 
-        printf("Digite a nova idade: ");
-        if(!lerInteiro(&aluno.idade)){
-            printf("\nEntrada invalida! Digite um numero valido.\n");
-            return;
-        }
+        if(confirmarEscolha("Esse e o aluno que deseja editar?")){
+            if(confirmarEscolha("Deseja alterar o nome?")){
+                printf("Digite o novo nome: ");
+                fgets(aluno.nome, sizeof(aluno.nome), stdin);
+                aluno.nome[strcspn(aluno.nome, "\n")] = '\0';
+            }
 
-        printf("Digite o novo periodo: ");
-        if(!lerInteiro(&aluno.periodo)){
-            printf("\nEntrada invalida! Digite um numero valido.\n");
-            return;
-        }
-        strcpy(aluno.matricula, matricula);
+            if(confirmarEscolha("Deseja alterar a idade?")){
+                printf("Digite a nova idade: ");
 
-        if(confirmarEscolha("Deseja confirmar a edicao?")){
-            Resultado resultado = salvarGenerico(&aluno, sizeof(Aluno), ARQUIVO_ALUNOS, ATUALIZAR, offsetof(Aluno, matricula));
-            Sleep(DELAY_PROPOSITAL);
+                if(!lerInteiro(&aluno.idade)){
+                    printf("\nEntrada invalida!\n");
+                    goto fim;
+                }
 
-            if(resultado != SUCESSO){
-                printf("Erro ao editar aluno.\n");
-            }else{
-                printf("Aluno atualizado com sucesso.\n");
+                if(aluno.idade < MIN_IDADE){
+                    printf("\nIdade invalida! A idade minima e %d anos.\n", MIN_IDADE);
+                    goto fim;
+                }
+            }
+
+            if(confirmarEscolha("Deseja alterar o periodo?")){
+                printf("Digite o novo periodo: ");
+
+                if(!lerInteiro(&aluno.periodo)){
+                    printf("\nEntrada invalida!\n");
+                    goto fim;
+                }
+
+                if(aluno.periodo < 1 || aluno.periodo > MAX_PERIODOS){
+                    printf("\nPeriodo invalido! Digite um periodo entre 1 e %d.\n", MAX_PERIODOS);
+                    goto fim;
+                }
+            }
+
+            if(confirmarEscolha("Deseja confirmar a edicao?")){
+                resultado = salvarGenerico(&aluno, sizeof(Aluno), ARQUIVO_ALUNOS, ATUALIZAR, offsetof(Aluno, matricula));
+
+                Sleep(DELAY_PROPOSITAL);
+
+                if(resultado == SUCESSO)
+                    printf("Aluno atualizado com sucesso.\n");
+                else
+                    printf("Erro ao editar aluno.\n");
+
             }
         }
     }
+
+fim:
     menuPosOperacao(submenuAluno);
 }
 
 void formularioCadastrarDisciplina(){
     Disciplina disciplina;
-	
+
     exibirMenu("CADASTRAR DISCIPLINA", NULL, 0, true, false);
 
     printf("Digite o nome: ");
     fgets(disciplina.nome, sizeof(disciplina.nome), stdin);
     disciplina.nome[strcspn(disciplina.nome, "\n")] = '\0';
 
-	printf("Digite o periodo: ");
-	if (!lerInteiro(&disciplina.periodo)) {
-		return;
-	}
-    
+    printf("Digite o periodo: ");
+    if(!lerInteiro(&disciplina.periodo)){
+        printf("\nEntrada invalida!\n");
+        goto fim;
+    }
+
+    if(disciplina.periodo < 1 || disciplina.periodo > MAX_PERIODOS){
+        printf("\nPeriodo invalido! Digite um periodo entre 1 e %d.\n", MAX_PERIODOS);
+        goto fim;
+    }
+
     Resultado resultado = gerarCodigoGenerico(disciplina.codigo, ARQUIVO_DISCIPLINAS, sizeof(Disciplina), offsetof(Disciplina, codigo), ID_DISCIPLINA);
 
     if(resultado != SUCESSO){
-        printf("\nErro ao gerar matricula.\n");
-        return;
+        Sleep(DELAY_PROPOSITAL);
+        printf("\nErro ao gerar codigo.\n");
+        goto fim;
     }
 
     if(confirmarEscolha("Deseja confirmar o cadastro?")){
         resultado = salvarGenerico(&disciplina, sizeof(Disciplina), ARQUIVO_DISCIPLINAS, NOVO, 0);
         Sleep(DELAY_PROPOSITAL);
-        if(resultado == SUCESSO) printf("Disciplina cadastrada com sucesso!\n");
-        else printf("Erro ao cadastrar disciplina!\n");
-    } 
 
+        if(resultado == SUCESSO)
+            printf("Disciplina cadastrada com sucesso!\n");
+        else
+            printf("Erro ao cadastrar disciplina!\n");
+
+    }
+
+fim:
     menuPosOperacao(submenuDisciplina);
 }
 
@@ -950,36 +992,51 @@ void formularioEditarDisciplina(){
     fgets(codigo, sizeof(codigo), stdin);
     codigo[strcspn(codigo, "\n")] = '\0';
 
-    Resultado resultado = listarGenerico(ARQUIVO_DISCIPLINAS, sizeof(Disciplina), filtroCodigoDisciplina, codigo, exibirDisciplina, NULL);
+    Resultado resultado = buscarGenerico(ARQUIVO_DISCIPLINAS, sizeof(Disciplina), filtroCodigoDisciplina, codigo, &disciplina);
     Sleep(DELAY_PROPOSITAL);
 
-    if(resultado == NENHUM_REGISTRO){
+    if(resultado == ERRO_NAO_ENCONTRADO){
         printf("\nNao foi encontrada disciplina com esse codigo.\n");
     }else if(resultado != SUCESSO){
         printf("\nErro ao procurar disciplina.\n");
     }else{
-        printf("Digite o novo nome: ");
-        fgets(disciplina.nome, sizeof(disciplina.nome), stdin);
-        disciplina.nome[strcspn(disciplina.nome, "\n")] = '\0';
+        exibirDisciplina(&disciplina);
 
-        printf("Digite o novo periodo: ");
-        if(!lerInteiro(&disciplina.periodo)){
-            printf("\nEntrada invalida! Digite um numero valido.\n");
-            return;
+        if(confirmarEscolha("Essa e a disciplina que deseja editar?")){
+            if(confirmarEscolha("Deseja alterar o nome?")){
+                printf("Digite o novo nome: ");
+                fgets(disciplina.nome, sizeof(disciplina.nome), stdin);
+                disciplina.nome[strcspn(disciplina.nome, "\n")] = '\0';
+            }
+
+            if(confirmarEscolha("Deseja alterar o periodo?")){
+                printf("Digite o novo periodo: ");
+
+                if(!lerInteiro(&disciplina.periodo)){
+                    printf("\nEntrada invalida!\n");
+                    goto fim;
+                }
+
+                if(disciplina.periodo < 1 || disciplina.periodo > MAX_PERIODOS){
+                    printf("\nPeriodo invalido! Digite um periodo entre 1 e %d.\n", MAX_PERIODOS);
+                    goto fim;
+                }
+            }
+
+            if(confirmarEscolha("Deseja confirmar a edicao?")){
+                resultado = salvarGenerico(&disciplina, sizeof(Disciplina), ARQUIVO_DISCIPLINAS, ATUALIZAR, offsetof(Disciplina, codigo));
+                Sleep(DELAY_PROPOSITAL);
+
+                if(resultado == SUCESSO)
+                    printf("Disciplina atualizada com sucesso.\n");
+                else
+                    printf("Erro ao editar disciplina.\n");
+
+            }
         }
-
-        strcpy(disciplina.codigo, codigo);
-
-        resultado = salvarGenerico(&disciplina, sizeof(Disciplina), ARQUIVO_DISCIPLINAS, ATUALIZAR, offsetof(Disciplina, codigo));
-
-        Sleep(DELAY_PROPOSITAL);
-
-        if(resultado == SUCESSO)
-            printf("\nDisciplina atualizada com sucesso!\n");
-        else
-            printf("\nErro ao atualizar disciplina!\n");
     }
 
+fim:
     menuPosOperacao(submenuDisciplina);
 }
 
@@ -995,25 +1052,25 @@ void formularioEditarNotasCaderneta(){
     editarNotasCaderneta(codigo);
 }
 
-void formularioCadastrarCaderneta(){ 
-    Caderneta caderneta; 
-    Disciplina disciplina; 
-    char codigo[20]; 
+void formularioCadastrarCaderneta(){
+    Caderneta caderneta = {0};
+    Disciplina disciplina;
+    char codigo[20];
 
-    exibirMenu("CADASTRAR CADERNETA", NULL, 0, true, false); 
+    exibirMenu("CADASTRAR CADERNETA", NULL, 0, true, false);
 
-    printf("Digite o codigo da disciplina: "); 
-    fgets(codigo, sizeof(codigo), stdin); 
-    codigo[strcspn(codigo, "\n")] = '\0'; 
+    printf("Digite o codigo da disciplina: ");
+    fgets(codigo, sizeof(codigo), stdin);
+    codigo[strcspn(codigo, "\n")] = '\0';
 
-    Resultado resultado = buscarGenerico(ARQUIVO_DISCIPLINAS, sizeof(Disciplina), filtroCodigoDisciplina, codigo, &disciplina); 
+    Resultado resultado = buscarGenerico(ARQUIVO_DISCIPLINAS, sizeof(Disciplina), filtroCodigoDisciplina, codigo, &disciplina);
     Sleep(DELAY_PROPOSITAL);
 
-    if(resultado == ERRO_NAO_ENCONTRADO){ 
-        printf("\nDisciplina nao encontrada!\n"); 
-    }else if(resultado != SUCESSO){ 
-        printf("\nErro ao procurar disciplina!\n"); 
-    }else{ 
+    if(resultado == ERRO_NAO_ENCONTRADO){
+        printf("\nDisciplina nao encontrada!\n");
+    }else if(resultado != SUCESSO){
+        printf("\nErro ao procurar disciplina!\n");
+    }else{
         printf("\nDisciplina encontrada:\n");
         printf("--------------------------------------------------------\n");
         printf("Codigo: %s\n", disciplina.codigo);
@@ -1021,34 +1078,48 @@ void formularioCadastrarCaderneta(){
         printf("Periodo: %d\n", disciplina.periodo);
 
         if(confirmarEscolha("\nDeseja confirmar esta disciplina?")){
-            caderneta.disciplina = disciplina; 
-            caderneta.fechada = false; 
+            caderneta.disciplina = disciplina;
+            caderneta.fechada = false;
 
-            for(int i = 0; i < MAX_ALUNOS; i++) 
-                for(int j = 0; j < MAX_NOTAS; j++) 
-                    caderneta.notas[i][j] = 0; 
+            resultado = gerarCodigoGenerico(caderneta.codigo, ARQUIVO_CADERNETAS, sizeof(Caderneta), offsetof(Caderneta, codigo), ID_CADERNETA);
 
-            resultado = gerarCodigoGenerico(caderneta.codigo, ARQUIVO_CADERNETAS, sizeof(Caderneta), offsetof(Caderneta, codigo), ID_CADERNETA); 
+            if(resultado != SUCESSO){
+                Sleep(DELAY_PROPOSITAL);
+                printf("Erro ao gerar codigo da caderneta!\n");
+            }else{
+                resultado = salvarGenerico(&caderneta, sizeof(Caderneta), ARQUIVO_CADERNETAS, NOVO, 0);
+                Sleep(DELAY_PROPOSITAL);
 
-            if(resultado != SUCESSO){ 
-                printf("Erro ao gerar codigo da caderneta!\n"); 
-            }else{ 
-                resultado = salvarGenerico(&caderneta, sizeof(Caderneta), ARQUIVO_CADERNETAS, NOVO, 0); 
-                if(resultado == SUCESSO){ 
-                    Sleep(DELAY_PROPOSITAL); 
+                if(resultado == SUCESSO){
                     printf("Caderneta cadastrada com sucesso!\n");
-                    adicionarAlunoCaderneta(caderneta.codigo); 
-                }else 
-                    printf("Erro ao cadastrar caderneta!\n"); 
+                    Sleep(DELAY_PROPOSITAL);
+                    exibirMenu("ADICIONAR ALUNO NA CADERNETA", NULL, 0, true, false);
+                    exibirCaderneta(&caderneta);
+                    adicionarAlunoCaderneta(caderneta.codigo);
+                    return;
+                }else{
+                    printf("Erro ao cadastrar caderneta!\n");
+                }
             }
         }else{
             printf("Operacao cancelada.\n");
         }
-    } 
+    }
 
-    menuPosOperacao(submenuCaderneta); 
+    menuPosOperacao(submenuCaderneta);
 }
 
+void formularioFecharCaderneta(){
+    char codigo[20];
+
+    exibirMenu("FECHAR CADERNETA", NULL, 0, true, false);
+
+    printf("Digite o codigo da caderneta: ");
+    fgets(codigo, sizeof(codigo), stdin);
+    codigo[strcspn(codigo, "\n")] = '\0';
+
+    fecharCaderneta(codigo);
+}
 
 void formularioAdicionarAlunoCaderneta(){
     char codigo[20];
@@ -1062,31 +1133,12 @@ void formularioAdicionarAlunoCaderneta(){
     adicionarAlunoCaderneta(codigo);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void editarNotasCaderneta(const char *codigo){
     Caderneta caderneta;
 
     Resultado resultado = buscarGenerico(ARQUIVO_CADERNETAS, sizeof(Caderneta), filtroCodigoCaderneta, codigo, &caderneta);
     Sleep(DELAY_PROPOSITAL);
-    
+
     if(resultado == ERRO_NAO_ENCONTRADO){
         printf("\nCaderneta nao encontrada!\n");
     }else if(resultado != SUCESSO){
@@ -1094,57 +1146,82 @@ void editarNotasCaderneta(const char *codigo){
     }else if(caderneta.fechada){
         printf("\nA caderneta esta fechada e nao pode mais ser alterada!\n");
     }else{
-        exibirTabelaCaderneta(&caderneta);
+        while(1){
+            exibirTabelaCaderneta(&caderneta);
 
-        int aluno;
-        int avaliacao;
-        float nota;
+            int aluno, avaliacao;
+            float nota;
 
-        printf("Digite o numero do aluno: ");
-        if(!lerInteiro(&aluno)){
-            printf("\nEntrada invalida!\n");
-        }else if(aluno < 1 || aluno > MAX_ALUNOS){
-            printf("\nAluno invalido!\n");
-        }else if(caderneta.alunos[aluno - 1].matricula[0] == '\0'){
-            printf("\nNao existe aluno cadastrado nessa posicao!\n");
-        }else{
+            printf("Digite o numero do aluno: ");
+            if(!lerInteiro(&aluno)){
+                printf("\nEntrada invalida!\n");
+                break;
+            }else if(aluno < 1 || aluno > MAX_ALUNOS){
+                printf("\nAluno invalido!\n");
+                break;
+            }else if(caderneta.alunos[aluno - 1].matricula[0] == '\0'){
+                printf("\nNao existe aluno cadastrado nessa posicao!\n");
+                break;
+            }
+
+            exibirAluno(&caderneta.alunos[aluno - 1]);
+
+            if(!confirmarEscolha("Deseja alterar as notas deste aluno?"))
+                break;
+
             printf("Digite a avaliacao (1-%d): ", MAX_NOTAS);
 
             if(!lerInteiro(&avaliacao)){
                 printf("\nEntrada invalida!\n");
+                break;
             }else if(avaliacao < 1 || avaliacao > MAX_NOTAS){
                 printf("\nAvaliacao invalida!\n");
-            }else{
-                printf("Digite a nova nota: ");
+                break;
+            }
 
-                if(!lerFloat(&nota)){
-                    printf("\nEntrada invalida!\n");
-                }else if(nota < 0 || nota > 10){
-                    printf("\nNota invalida! Digite uma nota entre 0 e 10.\n");
+            printf("Nota atual: %.2f\n", caderneta.notas[aluno - 1][avaliacao - 1]);
+            printf("Digite a nova nota: ");
+
+            if(!lerFloat(&nota)){
+                printf("\nEntrada invalida!\n");
+                break;
+            }else if(nota < 0 || nota > 10){
+                printf("\nNota invalida! Digite uma nota entre 0 e 10.\n");
+                break;
+            }
+
+            printf("Nova nota: %.2f\n", nota);
+
+            if(confirmarEscolha("Deseja confirmar a alteracao da nota?")){
+                caderneta.notas[aluno - 1][avaliacao - 1] = nota;
+
+                resultado = salvarGenerico(&caderneta, sizeof(Caderneta), ARQUIVO_CADERNETAS, ATUALIZAR, offsetof(Caderneta, codigo));
+                Sleep(DELAY_PROPOSITAL);
+
+                if(resultado == SUCESSO){
+                    printf("\nNota atualizada com sucesso!\n");
                 }else{
-                    caderneta.notas[aluno - 1][avaliacao - 1] = nota;
-
-                    resultado = salvarGenerico(&caderneta, sizeof(Caderneta), ARQUIVO_CADERNETAS, ATUALIZAR, offsetof(Caderneta, codigo));
-
-                    if(resultado == SUCESSO)
-                        printf("\nNota atualizada com sucesso!\n");
-                    else
-                        printf("\nErro ao atualizar nota!\n");
+                    printf("\nErro ao atualizar nota!\n");
+                    break;
                 }
             }
+
+            if(!confirmarEscolha("Deseja alterar outra nota?"))
+                break;
         }
     }
 
-    menuPosOperacao(submenuCaderneta);
+    menuPosOperacao(submenuEditarCaderneta);
 }
 
 void adicionarAlunoCaderneta(const char *codigo){
     Caderneta caderneta;
     Aluno aluno;
     char matricula[20];
-    int posicao = -1;
+    int posicao;
 
     Resultado resultado = buscarGenerico(ARQUIVO_CADERNETAS, sizeof(Caderneta), filtroCodigoCaderneta, codigo, &caderneta);
+    Sleep(DELAY_PROPOSITAL);
 
     if(resultado == ERRO_NAO_ENCONTRADO){
         printf("\nCaderneta nao encontrada!\n");
@@ -1153,25 +1230,29 @@ void adicionarAlunoCaderneta(const char *codigo){
     }else if(caderneta.fechada){
         printf("\nA caderneta esta fechada e nao pode mais ser alterada!\n");
     }else{
-        exibirMenu("ADICIONAR ALUNO NA CADERNETA", NULL, 0, true, false);
-        exibirCaderneta(&caderneta);
-        exibirTabelaCaderneta(&caderneta);
+        while(1){
+            posicao = -1;
 
-        for(int i = 0; i < MAX_ALUNOS; i++){
-            if(caderneta.alunos[i].matricula[0] == '\0'){
-                posicao = i;
+            for(int i = 0; i < MAX_ALUNOS; i++){
+                if(caderneta.alunos[i].matricula[0] == '\0'){
+                    posicao = i;
+                    break;
+                }
+            }
+
+            if(posicao == -1){
+                printf("\nA caderneta atingiu o limite de %d alunos!\n", MAX_ALUNOS);
                 break;
             }
-        }
 
-        if(posicao == -1){
-            printf("\nA caderneta esta cheia!\n");
-        }else{
+            exibirTabelaCaderneta(&caderneta);
+
             printf("\nDigite a matricula do aluno: ");
             fgets(matricula, sizeof(matricula), stdin);
             matricula[strcspn(matricula, "\n")] = '\0';
 
             resultado = buscarGenerico(ARQUIVO_ALUNOS, sizeof(Aluno), filtroMatricula, matricula, &aluno);
+            Sleep(DELAY_PROPOSITAL);
 
             if(resultado == ERRO_NAO_ENCONTRADO){
                 printf("\nAluno nao encontrado!\n");
@@ -1179,43 +1260,66 @@ void adicionarAlunoCaderneta(const char *codigo){
                 printf("\nErro ao procurar aluno!\n");
             }else{
                 printf("\nAluno encontrado:\n");
-                printf("--------------------------------------------------------\n");
-                printf("Matricula: %s\n", aluno.matricula);
-                printf("Nome: %s\n", aluno.nome);
-                printf("Periodo: %d\n", aluno.periodo);
+                exibirAluno(&aluno);
 
-                if(confirmarEscolha("\nDeseja adicionar este aluno?")){
-                    caderneta.alunos[posicao] = aluno;
+                if(!confirmarEscolha("Deseja cadastrar este aluno na caderneta?"))
+                    break;
 
-                    resultado = salvarGenerico(&caderneta, sizeof(Caderneta), ARQUIVO_CADERNETAS, ATUALIZAR, offsetof(Caderneta, codigo));
+                caderneta.alunos[posicao] = aluno;
 
-                    if(resultado == SUCESSO)
-                        printf("\nAluno adicionado com sucesso!\n");
-                    else
-                        printf("\nErro ao adicionar aluno!\n");
-                }else{
-                    printf("\nOperacao cancelada.\n");
+                resultado = salvarGenerico(&caderneta, sizeof(Caderneta), ARQUIVO_CADERNETAS, ATUALIZAR, offsetof(Caderneta, codigo));
+                Sleep(DELAY_PROPOSITAL);
+
+                if(resultado != SUCESSO){
+                    printf("\nErro ao cadastrar aluno na caderneta!\n");
+                    break;
                 }
+
+                printf("\nAluno cadastrado na caderneta com sucesso!\n");
+
+                if(posicao == MAX_ALUNOS - 1){
+                    printf("\nA caderneta atingiu o limite de %d alunos!\n", MAX_ALUNOS);
+                    break;
+                }
+
+                if(!confirmarEscolha("Deseja cadastrar outro aluno?"))
+                    break;
             }
         }
     }
+
+    menuPosOperacao(submenuEditarCaderneta);
 }
 
+void fecharCaderneta(const char *codigo){
+    Caderneta caderneta;
+    
+    Resultado resultado = buscarGenerico(ARQUIVO_CADERNETAS, sizeof(Caderneta), filtroCodigoCaderneta, codigo, &caderneta);
+    Sleep(DELAY_PROPOSITAL);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    if(resultado == ERRO_NAO_ENCONTRADO){
+        printf("\nCaderneta nao encontrada!\n");
+    }else if(resultado != SUCESSO){
+        printf("\nErro ao procurar caderneta!\n");
+    }else if(caderneta.fechada){
+        printf("\nA caderneta ja esta fechada!\n");
+    }else{
+        exibirTabelaCaderneta(&caderneta);
+        if(confirmarEscolha("\nDeseja realmente fechar esta caderneta?")){
+            caderneta.fechada = true;
+            
+            resultado = salvarGenerico(&caderneta, sizeof(Caderneta), ARQUIVO_CADERNETAS, ATUALIZAR, offsetof(Caderneta, codigo));
+            Sleep(DELAY_PROPOSITAL);
+            
+            if(resultado == SUCESSO){
+                printf("\nCaderneta fechada com sucesso!\n");
+            }else{
+                printf("\nErro ao fechar caderneta!\n");
+            }
+        }
+    }
+    menuPosOperacao(submenuEditarCaderneta);
+}
 
 Resultado salvarGenerico( const void *dado, size_t tamanho, const char *nome_arquivo, OperacaoArquivo operacao, size_t offset_identificador){
     FILE *arq;
